@@ -1,41 +1,55 @@
 # Stats viewing app
-
-Create a basic stats viewing application by designing a database schema,
-importing data from a CSV file and implementing the routes.
+### A basic stats viewing application to analyze monetization events, stored in a database and retrieved via specified routes.
 
 ## Installation
+Clone this repository.
 
-This project comes with a pre-seeded SQLite database. Run `php artisan serve` to
-start a web server.
+- Run the following command to install dependencies: `composer install`
+- Run the migrations and seeders to set up the database schema: `php artisan migrate --seed`
+- The project uses a pre-seeded SQLite database by default. To use MySQL:
+    - Update the .env configuration with your MySQL credentials.
+    - Run the migrations and seeders as specified above.
+- Start the application with: `php artisan serve`
 
-Make sure to run the migrations and seeders and update the configuration if you
-would like to run this application with a MySQL database.
 
-## Assignment
+## Database Schema
+The database schema has been normalized to 3rd normal form and consists of the following tables:
 
-In the `storage/` folder you will find two files: _stats_2024_03_31.csv_ and
-_stats_2024_04_01.csv_.
+- campaigns: Stores unique campaigns identified by `utm_campaign`.
+- terms: Stores unique terms identified by `utm_term`.
+- stats: Contains individual monetization events with a `term_id` and `campaign_id` referencing the `terms` and `campaigns` tables, respectively. It also includes a timestamp and revenue field to enable hourly breakdowns.
 
-These files contain individual monetization events with or without tracking
-parameters: utm_campaign and utm_term.
+This structure ensures that `utm_campaign` and `utm_term` values are stored only once in the database, facilitating efficient queries and normalization.
 
-First, extend the database schema in a way that lets you store these stats in a
-format which allows you run hourly breakdowns by utm_campaign and utm_campaign +
-utm_term. Stats should link to the campaigns table.
+## CSV Import Command
+To import data from a CSV file, use the custom command ImportStatsCommand as follows:
+`php artisan app:import-stats {filename}`
 
-The schema should be as normalized as possible, preferably 3rd normal form.
-utm_campaign and utm_term values should exist only once in the whole database.
+- Description: This command accepts a CSV filename as a parameter and imports the data into the database.
+- Validation: Rows without a value for utm_campaign or utm_term are skipped.
+- Example: Import a file named stats_2024_03_31.csv: `php artisan app:import-stats stats_2024_03_31.csv`
 
-Second, implement the `ImportStatsCommand`. It should accept a filename and import
-the data from that file into the newly created schema. A row should not be
-imported when it does not have a value for the utm_campaign or utm_term column.
+## Routes
+The application provides three routes to display statistics. Below are the routes and descriptions for each.
 
-Finally, implement the routes defined in `routes/web.php`. The first route
-should render a table with all revenue aggregated by campaign. Each row should
-link to the second route.
+### Route 1: Campaign List (Home Route)
+- URL: `/`
+- Description: Displays a list of all campaigns, with total revenue aggregated by each `utm_campaign`.
+- Controller Method: `CampaignController@index`
+- Link: Each campaign row includes a link to view the detailed breakdown for that specific campaign.
 
-The second route should render a table with all revenue for a single campaign
-broken down by date and hour.
+### Route 2: Revenue by Date and Hour for a Campaign
+- URL: `/campaigns/{campaign}`
+- Description: Displays detailed revenue data for a single campaign, broken down by date and hour.
+- Controller Method: `CampaignController@show`
+- Parameters: `{campaign}` - The ID or slug of the specific campaign.
 
-The third route should render a table with all revenue for a single campaign
-broken down by utm_term.
+### Route 3: Revenue by Publisher (utm_term) for a Campaign
+- URL: `/campaigns/{campaign}/publishers`
+- Description: Displays revenue for a single campaign, broken down by each `utm_term`.
+- Controller Method: `CampaignController@publishers`
+- Parameters: `{campaign}` - The ID or slug of the specific campaign
+
+
+## Laravel Version
+- This project is built with Laravel 11, taking advantage of its modern features and improvements.
